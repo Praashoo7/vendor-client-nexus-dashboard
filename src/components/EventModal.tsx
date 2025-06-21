@@ -25,6 +25,14 @@ const EventModal: React.FC<EventModalProps> = ({
     vendorId: 0
   });
 
+  // Get unique categories from all vendors
+  const getAvailableCategories = () => {
+    const allCategories = vendors.flatMap(vendor => 
+      vendor.categories.split(',').map(cat => cat.trim())
+    );
+    return [...new Set(allCategories)].filter(cat => cat.length > 0);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.eventName.trim()) return;
@@ -52,6 +60,8 @@ const EventModal: React.FC<EventModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const availableCategories = getAvailableCategories();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -96,16 +106,22 @@ const EventModal: React.FC<EventModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Category
             </label>
-            <input
-              type="text"
+            <select
               name="category"
               value={formData.category}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., catering, photography"
-            />
+              required
+            >
+              <option value="">Select a category</option>
+              {availableCategories.map((category, index) => (
+                <option key={index} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
             <p className="text-xs text-gray-500 mt-1">
-              Separate multiple categories with commas
+              Categories are based on available vendor services
             </p>
           </div>
 
@@ -120,12 +136,22 @@ const EventModal: React.FC<EventModalProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={0}>Select a vendor (optional)</option>
-              {vendors.map(vendor => (
-                <option key={vendor.id} value={vendor.id}>
-                  {vendor.name} - ${vendor.price} ({vendor.categories})
-                </option>
-              ))}
+              {vendors
+                .filter(vendor => 
+                  !formData.category || 
+                  vendor.categories.split(',').map(c => c.trim()).includes(formData.category)
+                )
+                .map(vendor => (
+                  <option key={vendor.id} value={vendor.id}>
+                    {vendor.name} - ${vendor.price} ({vendor.categories})
+                  </option>
+                ))}
             </select>
+            {formData.category && (
+              <p className="text-xs text-gray-500 mt-1">
+                Showing vendors that offer "{formData.category}" services
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

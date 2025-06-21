@@ -5,6 +5,7 @@ import ClientModal from '@/components/ClientModal';
 import EventModal from '@/components/EventModal';
 import VendorTable from '@/components/VendorTable';
 import ClientTable from '@/components/ClientTable';
+import DashboardStats from '@/components/DashboardStats';
 import { Vendor, Client, Event } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
@@ -49,9 +50,9 @@ const Index = () => {
           name: 'John Smith',
           contactNo: '123-456-7890',
           events: [
-            { id: 1, clientId: 1, eventName: 'Wedding', category: 'catering,photography', vendorId: 1 }
+            { id: 1, clientId: 1, eventName: 'Wedding', category: 'catering', vendorId: 1 }
           ],
-          totalCost: 8000
+          totalCost: 5000
         },
       ];
       setClients(mockClients);
@@ -194,6 +195,9 @@ const Index = () => {
           </h1>
           <p className="text-gray-600">Manage your vendors and clients efficiently</p>
         </div>
+
+        {/* Dashboard Statistics */}
+        <DashboardStats vendors={vendors} clients={clients} />
 
         {/* Action Buttons */}
         <div className="flex gap-4 mb-8">
