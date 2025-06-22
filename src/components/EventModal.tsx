@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Vendor, Event } from '@/types';
 
 interface EventModalProps {
@@ -25,7 +25,18 @@ const EventModal: React.FC<EventModalProps> = ({
     vendor_id: ''
   });
 
-  // Get unique categories from all vendors
+  // Reset form when modal opens/closes or when vendors change
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        event_name: '',
+        category: '',
+        vendor_id: ''
+      });
+    }
+  }, [isOpen, vendors]); // Added vendors as dependency for live sync
+
+  // Get unique categories from all vendors - this will update when vendors change
   const getAvailableCategories = () => {
     const allCategories = vendors.flatMap(vendor => 
       Object.keys(vendor.categoryPrices)
@@ -53,10 +64,20 @@ const EventModal: React.FC<EventModalProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // If category changes, reset vendor selection to ensure consistency
+    if (name === 'category') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        vendor_id: '' // Reset vendor when category changes
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   if (!isOpen) return null;
@@ -123,7 +144,7 @@ const EventModal: React.FC<EventModalProps> = ({
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Select category based on available vendor services
+              Categories update automatically when vendors are modified
             </p>
           </div>
 
@@ -141,13 +162,18 @@ const EventModal: React.FC<EventModalProps> = ({
               {matchingVendors.map(vendor => (
                 <option key={vendor.id} value={vendor.id}>
                   {vendor.name} - {formData.category && vendor.categoryPrices[formData.category] ? 
-                    `$${vendor.categoryPrices[formData.category]}` : 'N/A'}
+                    `$${vendor.categoryPrices[formData.category].toLocaleString()}` : 'N/A'}
                 </option>
               ))}
             </select>
-            {formData.category && (
+            {formData.category && matchingVendors.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">
-                Showing vendors that offer "{formData.category}" services
+                Showing {matchingVendors.length} vendor(s) offering "{formData.category}" services
+              </p>
+            )}
+            {formData.category && matchingVendors.length === 0 && (
+              <p className="text-xs text-orange-500 mt-1">
+                No vendors currently offer "{formData.category}" services
               </p>
             )}
           </div>
@@ -158,12 +184,12 @@ const EventModal: React.FC<EventModalProps> = ({
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span>{formData.category}</span>
-                  <span className="font-semibold">${selectedVendor.categoryPrices[formData.category]}</span>
+                  <span className="font-semibold">${selectedVendor.categoryPrices[formData.category].toLocaleString()}</span>
                 </div>
                 <div className="border-t pt-1 mt-2">
                   <div className="flex justify-between font-bold text-green-800">
                     <span>Total:</span>
-                    <span>${selectedVendor.categoryPrices[formData.category]}</span>
+                    <span>${selectedVendor.categoryPrices[formData.category].toLocaleString()}</span>
                   </div>
                 </div>
               </div>

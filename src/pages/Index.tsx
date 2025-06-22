@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import VendorModal from '@/components/VendorModal';
 import ClientModal from '@/components/ClientModal';
@@ -56,16 +55,33 @@ const Index = () => {
     }
   };
 
+  // Live sync function to refresh clients after vendor changes
+  const syncClientsAfterVendorChange = async () => {
+    try {
+      const updatedClients = await fetchClients();
+      setClients(updatedClients);
+      console.log('Clients synced after vendor change');
+    } catch (error) {
+      console.error('Error syncing clients after vendor change:', error);
+    }
+  };
+
   const handleVendorSubmit = async (vendorData: Omit<Vendor, 'id'>) => {
     try {
       if (editingVendor) {
         const updatedVendor = await updateVendor(editingVendor.id, vendorData);
         setVendors(vendors.map(v => v.id === editingVendor.id ? updatedVendor : v));
         toast({ title: 'Vendor updated successfully' });
+        
+        // Live sync: Update clients after vendor change
+        await syncClientsAfterVendorChange();
       } else {
         const newVendor = await createVendor(vendorData);
         setVendors([...vendors, newVendor]);
         toast({ title: 'Vendor added successfully' });
+        
+        // Live sync: Update clients after vendor change
+        await syncClientsAfterVendorChange();
       }
       setIsVendorModalOpen(false);
       setEditingVendor(null);
@@ -152,6 +168,9 @@ const Index = () => {
       await deleteVendor(id);
       setVendors(vendors.filter(v => v.id !== id));
       toast({ title: 'Vendor deleted successfully' });
+      
+      // Live sync: Update clients after vendor deletion
+      await syncClientsAfterVendorChange();
     } catch (error) {
       console.error('Error deleting vendor:', error);
       toast({ title: 'Error deleting vendor', variant: 'destructive' });
