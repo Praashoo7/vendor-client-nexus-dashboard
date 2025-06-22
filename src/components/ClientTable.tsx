@@ -5,7 +5,7 @@ import { Client } from '@/types';
 interface ClientTableProps {
   clients: Client[];
   onEdit: (client: Client) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 const ClientTable: React.FC<ClientTableProps> = ({
@@ -21,7 +21,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
 
   const getUniqueCategories = (client: Client): string[] => {
     const allCategories = client.events
-      .flatMap(event => event.categories)
+      .map(event => event.category)
       .filter(cat => cat.length > 0);
     return [...new Set(allCategories)];
   };
@@ -52,7 +52,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
             <tr key={client.id} className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-3 px-2">
                 <div className="font-medium text-gray-900">{client.name}</div>
-                <div className="text-sm text-gray-500">{client.contactNo}</div>
+                <div className="text-sm text-gray-500">{client.contact_no}</div>
               </td>
               <td className="py-3 px-2">
                 <div className="font-semibold text-blue-600">
@@ -60,7 +60,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                 </div>
                 {client.events.length > 0 && (
                   <div className="text-xs text-gray-500 mt-1">
-                    {client.events.slice(0, 2).map(event => event.eventName).join(', ')}
+                    {client.events.slice(0, 2).map(event => event.event_name).join(', ')}
                     {client.events.length > 2 && ` +${client.events.length - 2} more`}
                   </div>
                 )}
@@ -96,7 +96,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(client)}
+                    onClick={() => handle Delete(client)}
                     className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded transition-colors"
                   >
                     Delete

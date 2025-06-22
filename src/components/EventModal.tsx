@@ -20,9 +20,9 @@ const EventModal: React.FC<EventModalProps> = ({
   totalEvents
 }) => {
   const [formData, setFormData] = useState({
-    eventName: '',
-    categories: [] as string[],
-    vendorId: 0
+    event_name: '',
+    category: '',
+    vendor_id: ''
   });
 
   // Get unique categories from all vendors
@@ -35,19 +35,19 @@ const EventModal: React.FC<EventModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.eventName.trim() || formData.categories.length === 0) return;
+    if (!formData.event_name.trim() || !formData.category) return;
     
     onSubmit({
-      eventName: formData.eventName.trim(),
-      categories: formData.categories,
-      vendorId: Number(formData.vendorId) || null
+      event_name: formData.event_name.trim(),
+      category: formData.category,
+      vendor_id: formData.vendor_id || null
     });
 
     // Reset form for next event
     setFormData({
-      eventName: '',
-      categories: [],
-      vendorId: 0
+      event_name: '',
+      category: '',
+      vendor_id: ''
     });
   };
 
@@ -55,25 +55,16 @@ const EventModal: React.FC<EventModalProps> = ({
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'vendorId' ? Number(value) : value
-    }));
-  };
-
-  const handleCategoryToggle = (category: string) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter(c => c !== category)
-        : [...prev.categories, category]
+      [name]: value
     }));
   };
 
   if (!isOpen) return null;
 
   const availableCategories = getAvailableCategories();
-  const selectedVendor = vendors.find(v => v.id === formData.vendorId);
+  const selectedVendor = vendors.find(v => v.id === formData.vendor_id);
   const matchingVendors = vendors.filter(vendor => 
-    formData.categories.some(cat => Object.keys(vendor.categoryPrices).includes(cat))
+    Object.keys(vendor.categoryPrices).includes(formData.category)
   );
 
   return (
@@ -106,8 +97,8 @@ const EventModal: React.FC<EventModalProps> = ({
             </label>
             <input
               type="text"
-              name="eventName"
-              value={formData.eventName}
+              name="event_name"
+              value={formData.event_name}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter event name"
@@ -117,23 +108,22 @@ const EventModal: React.FC<EventModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Categories
+              Category
             </label>
-            <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded p-2">
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select a category</option>
               {availableCategories.map((category) => (
-                <label key={category} className="flex items-center space-x-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={formData.categories.includes(category)}
-                    onChange={() => handleCategoryToggle(category)}
-                    className="rounded"
-                  />
-                  <span>{category}</span>
-                </label>
+                <option key={category} value={category}>{category}</option>
               ))}
-            </div>
+            </select>
             <p className="text-xs text-gray-500 mt-1">
-              Select categories based on available vendor services
+              Select category based on available vendor services
             </p>
           </div>
 
@@ -142,46 +132,38 @@ const EventModal: React.FC<EventModalProps> = ({
               Vendor
             </label>
             <select
-              name="vendorId"
-              value={formData.vendorId}
+              name="vendor_id"
+              value={formData.vendor_id}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value={0}>Select a vendor (optional)</option>
+              <option value="">Select a vendor (optional)</option>
               {matchingVendors.map(vendor => (
                 <option key={vendor.id} value={vendor.id}>
-                  {vendor.name} - {formData.categories.map(cat => 
-                    vendor.categoryPrices[cat] ? `${cat}: $${vendor.categoryPrices[cat]}` : ''
-                  ).filter(Boolean).join(', ')}
+                  {vendor.name} - {formData.category && vendor.categoryPrices[formData.category] ? 
+                    `$${vendor.categoryPrices[formData.category]}` : 'N/A'}
                 </option>
               ))}
             </select>
-            {formData.categories.length > 0 && (
+            {formData.category && (
               <p className="text-xs text-gray-500 mt-1">
-                Showing vendors that offer selected categories
+                Showing vendors that offer "{formData.category}" services
               </p>
             )}
           </div>
 
-          {selectedVendor && (
+          {selectedVendor && formData.category && selectedVendor.categoryPrices[formData.category] && (
             <div className="bg-green-50 p-3 rounded-lg">
               <h4 className="font-medium text-green-800 mb-2">Cost Breakdown:</h4>
               <div className="space-y-1">
-                {formData.categories.map(category => {
-                  const price = selectedVendor.categoryPrices[category];
-                  return price ? (
-                    <div key={category} className="flex justify-between text-sm">
-                      <span>{category}</span>
-                      <span className="font-semibold">${price}</span>
-                    </div>
-                  ) : null;
-                })}
+                <div className="flex justify-between text-sm">
+                  <span>{formData.category}</span>
+                  <span className="font-semibold">${selectedVendor.categoryPrices[formData.category]}</span>
+                </div>
                 <div className="border-t pt-1 mt-2">
                   <div className="flex justify-between font-bold text-green-800">
                     <span>Total:</span>
-                    <span>${formData.categories.reduce((sum, cat) => 
-                      sum + (selectedVendor.categoryPrices[cat] || 0), 0
-                    )}</span>
+                    <span>${selectedVendor.categoryPrices[formData.category]}</span>
                   </div>
                 </div>
               </div>

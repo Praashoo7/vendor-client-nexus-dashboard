@@ -5,7 +5,7 @@ import { Vendor } from '@/types';
 interface VendorTableProps {
   vendors: Vendor[];
   onEdit: (vendor: Vendor) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 const VendorTable: React.FC<VendorTableProps> = ({

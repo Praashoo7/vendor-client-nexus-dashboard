@@ -1,22 +1,43 @@
 
 export interface Vendor {
-  id: number;
+  id: string;
   name: string;
-  categoryPrices: { [category: string]: number }; // Changed from categories and price
+  categoryPrices: { [category: string]: number };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface VendorCategory {
+  id: string;
+  vendor_id: string;
+  category: string;
+  price: number;
+  created_at?: string;
 }
 
 export interface Event {
-  id: number;
-  clientId: number;
-  eventName: string;
-  categories: string[]; // Changed to array for multiple categories
-  vendorId: number;
+  id: string;
+  client_id: string;
+  event_name: string;
+  category: string;
+  vendor_id: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Client {
-  id: number;
+  id: string;
   name: string;
-  contactNo: string;
+  contact_no: string;
   events: Event[];
   totalCost: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DatabaseStats {
+  totalVendors: number;
+  totalClients: number;
+  totalEvents: number;
+  totalEarnings: number;
 }

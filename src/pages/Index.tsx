@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import VendorModal from '@/components/VendorModal';
 import ClientModal from '@/components/ClientModal';
@@ -8,6 +9,17 @@ import DashboardStats from '@/components/DashboardStats';
 import { Vendor, Client, Event } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import {
+  fetchVendors,
+  createVendor,
+  updateVendor,
+  deleteVendor,
+  fetchClients,
+  createClient,
+  updateClient,
+  deleteClient,
+  fetchDashboardStats
+} from '@/services/database';
 
 const Index = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -20,107 +32,75 @@ const Index = () => {
   const [pendingEvents, setPendingEvents] = useState<Partial<Event>[]>([]);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [pendingClientData, setPendingClientData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load initial data
+  // Load data from database
   useEffect(() => {
-    loadVendors();
-    loadClients();
+    loadData();
   }, []);
 
-  const loadVendors = async () => {
+  const loadData = async () => {
     try {
-      // Mock data for demonstration with category-specific pricing
-      const mockVendors: Vendor[] = [
-        { 
-          id: 1, 
-          name: 'Elite Catering', 
-          categoryPrices: { 
-            'catering': 5000, 
-            'food': 3000 
-          } 
-        },
-        { 
-          id: 2, 
-          name: 'Perfect Photos', 
-          categoryPrices: { 
-            'photography': 3000 
-          } 
-        },
-        { 
-          id: 3, 
-          name: 'Sound Masters', 
-          categoryPrices: {
-            'audio': 2500,
-            'equipment': 1500
-          } 
-        },
-      ];
-      setVendors(mockVendors);
+      setLoading(true);
+      const [vendorsData, clientsData] = await Promise.all([
+        fetchVendors(),
+        fetchClients()
+      ]);
+      setVendors(vendorsData);
+      setClients(clientsData);
     } catch (error) {
-      toast({ title: 'Error loading vendors', variant: 'destructive' });
-    }
-  };
-
-  const loadClients = async () => {
-    try {
-      // Mock data with updated structure
-      const mockClients: Client[] = [
-        {
-          id: 1,
-          name: 'John Smith',
-          contactNo: '123-456-7890',
-          events: [
-            { 
-              id: 1, 
-              clientId: 1, 
-              eventName: 'Wedding', 
-              categories: ['catering', 'photography'], 
-              vendorId: 1 
-            }
-          ],
-          totalCost: 8000
-        },
-      ];
-      setClients(mockClients);
-    } catch (error) {
-      toast({ title: 'Error loading clients', variant: 'destructive' });
+      console.error('Error loading data:', error);
+      toast({ title: 'Error loading data', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVendorSubmit = async (vendorData: Omit<Vendor, 'id'>) => {
     try {
       if (editingVendor) {
-        // Update existing vendor
-        const updatedVendor = { ...editingVendor, ...vendorData };
+        const updatedVendor = await updateVendor(editingVendor.id, vendorData);
         setVendors(vendors.map(v => v.id === editingVendor.id ? updatedVendor : v));
         toast({ title: 'Vendor updated successfully' });
       } else {
-        // Add new vendor
-        const newVendor: Vendor = {
-          id: Date.now(),
-          ...vendorData
-        };
+        const newVendor = await createVendor(vendorData);
         setVendors([...vendors, newVendor]);
         toast({ title: 'Vendor added successfully' });
       }
       setIsVendorModalOpen(false);
       setEditingVendor(null);
     } catch (error) {
+      console.error('Error saving vendor:', error);
       toast({ title: 'Error saving vendor', variant: 'destructive' });
     }
   };
 
   const handleClientSubmit = async (clientData: any) => {
-    setPendingClientData(clientData);
-    const events = Array.from({ length: clientData.numberOfEvents }, (_, i) => ({
-      eventName: '',
-      category: '',
-      vendorId: null
-    }));
-    setPendingEvents(events);
-    setCurrentEventIndex(0);
-    setIsClientModalOpen(false);
-    setIsEventModalOpen(true);
+    if (editingClient) {
+      // Handle client update - collect events first
+      setPendingClientData({ ...clientData, isUpdate: true, clientId: editingClient.id });
+      const events = Array.from({ length: clientData.numberOfEvents }, (_, i) => ({
+        event_name: editingClient.events[i]?.event_name || '',
+        category: editingClient.events[i]?.category || '',
+        vendor_id: editingClient.events[i]?.vendor_id || null
+      }));
+      setPendingEvents(events);
+      setCurrentEventIndex(0);
+      setIsClientModalOpen(false);
+      setIsEventModalOpen(true);
+    } else {
+      // Handle new client creation
+      setPendingClientData(clientData);
+      const events = Array.from({ length: clientData.numberOfEvents }, (_, i) => ({
+        event_name: '',
+        category: '',
+        vendor_id: null
+      }));
+      setPendingEvents(events);
+      setCurrentEventIndex(0);
+      setIsClientModalOpen(false);
+      setIsEventModalOpen(true);
+    }
   };
 
   const handleEventSubmit = async (eventData: Partial<Event>) => {
@@ -133,44 +113,30 @@ const Index = () => {
     } else {
       // All events completed, save client
       try {
-        const newClient: Client = {
-          id: Date.now(),
-          name: pendingClientData.name,
-          contactNo: pendingClientData.contactNo,
-          events: updatedEvents.map((event, index) => ({
-            id: Date.now() + index,
-            clientId: Date.now(),
-            eventName: event.eventName || '',
-            categories: event.categories || [],
-            vendorId: event.vendorId || 0
-          })),
-          totalCost: calculateClientCost(updatedEvents)
-        };
-        
-        setClients([...clients, newClient]);
-        toast({ title: 'Client added successfully' });
+        if (pendingClientData.isUpdate) {
+          // Update existing client
+          const updatedClient = await updateClient(
+            pendingClientData.clientId,
+            { name: pendingClientData.name, contact_no: pendingClientData.contactNo },
+            updatedEvents
+          );
+          setClients(clients.map(c => c.id === pendingClientData.clientId ? updatedClient : c));
+          toast({ title: 'Client updated successfully' });
+        } else {
+          // Create new client
+          const newClient = await createClient(
+            { name: pendingClientData.name, contact_no: pendingClientData.contactNo },
+            updatedEvents
+          );
+          setClients([...clients, newClient]);
+          toast({ title: 'Client added successfully' });
+        }
         resetEventModal();
       } catch (error) {
+        console.error('Error saving client:', error);
         toast({ title: 'Error saving client', variant: 'destructive' });
       }
     }
-  };
-
-  const calculateClientCost = (events: Partial<Event>[]): number => {
-    let totalCost = 0;
-    events.forEach(event => {
-      if (event.vendorId && event.categories) {
-        const vendor = vendors.find(v => v.id === event.vendorId);
-        if (vendor) {
-          event.categories.forEach(category => {
-            if (vendor.categoryPrices[category]) {
-              totalCost += vendor.categoryPrices[category];
-            }
-          });
-        }
-      }
-    });
-    return totalCost;
   };
 
   const resetEventModal = () => {
@@ -178,22 +144,27 @@ const Index = () => {
     setPendingEvents([]);
     setCurrentEventIndex(0);
     setPendingClientData(null);
+    setEditingClient(null);
   };
 
-  const handleDeleteVendor = async (id: number) => {
+  const handleDeleteVendor = async (id: string) => {
     try {
+      await deleteVendor(id);
       setVendors(vendors.filter(v => v.id !== id));
       toast({ title: 'Vendor deleted successfully' });
     } catch (error) {
+      console.error('Error deleting vendor:', error);
       toast({ title: 'Error deleting vendor', variant: 'destructive' });
     }
   };
 
-  const handleDeleteClient = async (id: number) => {
+  const handleDeleteClient = async (id: string) => {
     try {
+      await deleteClient(id);
       setClients(clients.filter(c => c.id !== id));
       toast({ title: 'Client deleted successfully' });
     } catch (error) {
+      console.error('Error deleting client:', error);
       toast({ title: 'Error deleting client', variant: 'destructive' });
     }
   };
@@ -207,6 +178,17 @@ const Index = () => {
     setEditingClient(client);
     setIsClientModalOpen(true);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">

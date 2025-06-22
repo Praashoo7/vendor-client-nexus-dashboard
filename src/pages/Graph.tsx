@@ -39,7 +39,7 @@ const Graph: React.FC<GraphProps> = ({ clients, vendors }) => {
           label: (
             <div className="text-center">
               <div className="font-bold text-green-700">{client.name}</div>
-              <div className="text-xs text-gray-500">{client.contactNo}</div>
+              <div className="text-xs text-gray-500">{client.contact_no}</div>
               <div className="text-xs font-semibold text-green-600">
                 ${client.totalCost.toLocaleString()}
               </div>
@@ -58,27 +58,24 @@ const Graph: React.FC<GraphProps> = ({ clients, vendors }) => {
 
       // Group events by vendor
       const vendorEvents = client.events.reduce((acc, event) => {
-        if (event.vendorId) {
-          if (!acc[event.vendorId]) {
-            acc[event.vendorId] = [];
+        if (event.vendor_id) {
+          if (!acc[event.vendor_id]) {
+            acc[event.vendor_id] = [];
           }
-          acc[event.vendorId].push(event);
+          acc[event.vendor_id].push(event);
         }
         return acc;
-      }, {} as { [vendorId: number]: typeof client.events });
+      }, {} as { [vendorId: string]: typeof client.events });
 
       let eventYOffset = 0;
-      Object.entries(vendorEvents).forEach(([vendorIdStr, events]) => {
-        const vendorId = parseInt(vendorIdStr);
+      Object.entries(vendorEvents).forEach(([vendorId, events]) => {
         const vendor = vendors.find(v => v.id === vendorId);
         if (!vendor) return;
 
         // Add vendor node
         const vendorNodeId = `vendor-${client.id}-${vendorId}`;
         const totalCost = events.reduce((sum, event) => {
-          return sum + event.categories.reduce((catSum, category) => {
-            return catSum + (vendor.categoryPrices[category] || 0);
-          }, 0);
+          return sum + (vendor.categoryPrices[event.category] || 0);
         }, 0);
 
         nodes.push({
@@ -95,7 +92,7 @@ const Graph: React.FC<GraphProps> = ({ clients, vendors }) => {
                 <div className="text-xs space-y-1">
                   {events.slice(0, 2).map((event, idx) => (
                     <div key={idx} className="bg-blue-50 px-1 rounded">
-                      {event.eventName}
+                      {event.event_name}
                     </div>
                   ))}
                   {events.length > 2 && (
@@ -125,7 +122,7 @@ const Graph: React.FC<GraphProps> = ({ clients, vendors }) => {
           target: vendorNodeId,
           animated: true,
           style: { stroke: '#16a34a', strokeWidth: 2 },
-          label: events.map(e => e.categories.join(', ')).join(' | '),
+          label: events.map(e => e.category).join(', '),
           labelStyle: { fontSize: '10px', fontWeight: 'bold' },
         });
 
