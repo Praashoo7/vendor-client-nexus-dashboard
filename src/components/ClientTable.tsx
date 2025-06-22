@@ -96,7 +96,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
                     Edit
                   </button>
                   <button
-                    onClick={() => handle Delete(client)}
+                    onClick={() => handleDelete(client)}
                     className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded transition-colors"
                   >
                     Delete
