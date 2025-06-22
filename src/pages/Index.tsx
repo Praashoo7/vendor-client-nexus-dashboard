@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import VendorModal from '@/components/VendorModal';
-import ClientModal from '@/components/ClientModal';
-import EventModal from '@/components/EventModal';
-import VendorTable from '@/components/VendorTable';
-import ClientTable from '@/components/ClientTable';
-import DashboardStats from '@/components/DashboardStats';
-import { Vendor, Client, Event } from '@/types';
-import { toast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import VendorModal from "@/components/VendorModal";
+import ClientModal from "@/components/ClientModal";
+import EventModal from "@/components/EventModal";
+import VendorTable from "@/components/VendorTable";
+import ClientTable from "@/components/ClientTable";
+import DashboardStats from "@/components/DashboardStats";
+import { Vendor, Client, Event } from "@/types";
+import { toast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 import {
   fetchVendors,
   createVendor,
@@ -17,8 +17,8 @@ import {
   createClient,
   updateClient,
   deleteClient,
-  fetchDashboardStats
-} from '@/services/database';
+  fetchDashboardStats,
+} from "@/services/database";
 
 const Index = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -43,13 +43,13 @@ const Index = () => {
       setLoading(true);
       const [vendorsData, clientsData] = await Promise.all([
         fetchVendors(),
-        fetchClients()
+        fetchClients(),
       ]);
       setVendors(vendorsData);
       setClients(clientsData);
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast({ title: 'Error loading data', variant: 'destructive' });
+      console.error("Error loading data:", error);
+      toast({ title: "Error loading data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -60,46 +60,55 @@ const Index = () => {
     try {
       const updatedClients = await fetchClients();
       setClients(updatedClients);
-      console.log('Clients synced after vendor change');
+      console.log("Clients synced after vendor change");
     } catch (error) {
-      console.error('Error syncing clients after vendor change:', error);
+      console.error("Error syncing clients after vendor change:", error);
     }
   };
 
-  const handleVendorSubmit = async (vendorData: Omit<Vendor, 'id'>) => {
+  const handleVendorSubmit = async (vendorData: Omit<Vendor, "id">) => {
     try {
       if (editingVendor) {
         const updatedVendor = await updateVendor(editingVendor.id, vendorData);
-        setVendors(vendors.map(v => v.id === editingVendor.id ? updatedVendor : v));
-        toast({ title: 'Vendor updated successfully' });
-        
+        setVendors(
+          vendors.map((v) => (v.id === editingVendor.id ? updatedVendor : v))
+        );
+        toast({ title: "Vendor updated successfully" });
+
         // Live sync: Update clients after vendor change
         await syncClientsAfterVendorChange();
       } else {
         const newVendor = await createVendor(vendorData);
         setVendors([...vendors, newVendor]);
-        toast({ title: 'Vendor added successfully' });
-        
+        toast({ title: "Vendor added successfully" });
+
         // Live sync: Update clients after vendor change
         await syncClientsAfterVendorChange();
       }
       setIsVendorModalOpen(false);
       setEditingVendor(null);
     } catch (error) {
-      console.error('Error saving vendor:', error);
-      toast({ title: 'Error saving vendor', variant: 'destructive' });
+      console.error("Error saving vendor:", error);
+      toast({ title: "Error saving vendor", variant: "destructive" });
     }
   };
 
   const handleClientSubmit = async (clientData: any) => {
     if (editingClient) {
       // Handle client update - collect events first
-      setPendingClientData({ ...clientData, isUpdate: true, clientId: editingClient.id });
-      const events = Array.from({ length: clientData.numberOfEvents }, (_, i) => ({
-        event_name: editingClient.events[i]?.event_name || '',
-        category: editingClient.events[i]?.category || '',
-        vendor_id: editingClient.events[i]?.vendor_id || null
-      }));
+      setPendingClientData({
+        ...clientData,
+        isUpdate: true,
+        clientId: editingClient.id,
+      });
+      const events = Array.from(
+        { length: clientData.numberOfEvents },
+        (_, i) => ({
+          event_name: editingClient.events[i]?.event_name || "",
+          category: editingClient.events[i]?.category || "",
+          vendor_id: editingClient.events[i]?.vendor_id || null,
+        })
+      );
       setPendingEvents(events);
       setCurrentEventIndex(0);
       setIsClientModalOpen(false);
@@ -107,11 +116,14 @@ const Index = () => {
     } else {
       // Handle new client creation
       setPendingClientData(clientData);
-      const events = Array.from({ length: clientData.numberOfEvents }, (_, i) => ({
-        event_name: '',
-        category: '',
-        vendor_id: null
-      }));
+      const events = Array.from(
+        { length: clientData.numberOfEvents },
+        (_, i) => ({
+          event_name: "",
+          category: "",
+          vendor_id: null,
+        })
+      );
       setPendingEvents(events);
       setCurrentEventIndex(0);
       setIsClientModalOpen(false);
@@ -133,24 +145,34 @@ const Index = () => {
           // Update existing client
           const updatedClient = await updateClient(
             pendingClientData.clientId,
-            { name: pendingClientData.name, contact_no: pendingClientData.contactNo },
+            {
+              name: pendingClientData.name,
+              contact_no: pendingClientData.contactNo,
+            },
             updatedEvents
           );
-          setClients(clients.map(c => c.id === pendingClientData.clientId ? updatedClient : c));
-          toast({ title: 'Client updated successfully' });
+          setClients(
+            clients.map((c) =>
+              c.id === pendingClientData.clientId ? updatedClient : c
+            )
+          );
+          toast({ title: "Client updated successfully" });
         } else {
           // Create new client
           const newClient = await createClient(
-            { name: pendingClientData.name, contact_no: pendingClientData.contactNo },
+            {
+              name: pendingClientData.name,
+              contact_no: pendingClientData.contactNo,
+            },
             updatedEvents
           );
           setClients([...clients, newClient]);
-          toast({ title: 'Client added successfully' });
+          toast({ title: "Client added successfully" });
         }
         resetEventModal();
       } catch (error) {
-        console.error('Error saving client:', error);
-        toast({ title: 'Error saving client', variant: 'destructive' });
+        console.error("Error saving client:", error);
+        toast({ title: "Error saving client", variant: "destructive" });
       }
     }
   };
@@ -166,25 +188,25 @@ const Index = () => {
   const handleDeleteVendor = async (id: string) => {
     try {
       await deleteVendor(id);
-      setVendors(vendors.filter(v => v.id !== id));
-      toast({ title: 'Vendor deleted successfully' });
-      
+      setVendors(vendors.filter((v) => v.id !== id));
+      toast({ title: "Vendor deleted successfully" });
+
       // Live sync: Update clients after vendor deletion
       await syncClientsAfterVendorChange();
     } catch (error) {
-      console.error('Error deleting vendor:', error);
-      toast({ title: 'Error deleting vendor', variant: 'destructive' });
+      console.error("Error deleting vendor:", error);
+      toast({ title: "Error deleting vendor", variant: "destructive" });
     }
   };
 
   const handleDeleteClient = async (id: string) => {
     try {
       await deleteClient(id);
-      setClients(clients.filter(c => c.id !== id));
-      toast({ title: 'Client deleted successfully' });
+      setClients(clients.filter((c) => c.id !== id));
+      toast({ title: "Client deleted successfully" });
     } catch (error) {
-      console.error('Error deleting client:', error);
-      toast({ title: 'Error deleting client', variant: 'destructive' });
+      console.error("Error deleting client:", error);
+      toast({ title: "Error deleting client", variant: "destructive" });
     }
   };
 
@@ -217,7 +239,9 @@ const Index = () => {
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             Vendor & Client Dashboard
           </h1>
-          <p className="text-gray-600">Manage your vendors and clients efficiently</p>
+          <p className="text-gray-600">
+            Manage your vendors and clients efficiently
+          </p>
         </div>
 
         {/* Dashboard Statistics */}
@@ -248,7 +272,9 @@ const Index = () => {
         {/* Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Vendors</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              Vendors
+            </h2>
             <VendorTable
               vendors={vendors}
               onEdit={handleEditVendor}
@@ -257,7 +283,9 @@ const Index = () => {
           </div>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Clients</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              Clients
+            </h2>
             <ClientTable
               clients={clients}
               onEdit={handleEditClient}
@@ -294,6 +322,7 @@ const Index = () => {
           vendors={vendors}
           eventNumber={currentEventIndex + 1}
           totalEvents={pendingEvents.length}
+          existingEvents={pendingEvents}
         />
       </div>
     </div>
