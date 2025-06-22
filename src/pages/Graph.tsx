@@ -10,6 +10,7 @@ import {
   Node,
   Edge,
   Position,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Client, Vendor } from '@/types';
@@ -177,7 +178,7 @@ const Graph: React.FC<GraphProps> = ({ clients, vendors }) => {
                 nodeBorderRadius={8}
               />
               <Controls />
-              <Background variant="dots" gap={20} size={1} />
+              <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
             </ReactFlow>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
