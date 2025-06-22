@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import { Vendor, Event } from '@/types';
+import React, { useState, useEffect } from "react";
+import { Vendor, Event } from "@/types";
 
 interface EventModalProps {
   isOpen: boolean;
@@ -9,6 +8,7 @@ interface EventModalProps {
   vendors: Vendor[];
   eventNumber: number;
   totalEvents: number;
+  existingEvents: Partial<Event>[]; // New prop to get existing event data
 }
 
 const EventModal: React.FC<EventModalProps> = ({
@@ -17,65 +17,67 @@ const EventModal: React.FC<EventModalProps> = ({
   onSubmit,
   vendors,
   eventNumber,
-  totalEvents
+  totalEvents,
+  existingEvents,
 }) => {
   const [formData, setFormData] = useState({
-    event_name: '',
-    category: '',
-    vendor_id: ''
+    event_name: "",
+    category: "",
+    vendor_id: "",
   });
 
-  // Reset form when modal opens/closes or when vendors change
+  // Reset or prefill form when modal opens
   useEffect(() => {
     if (isOpen) {
+      const existingEvent = existingEvents[eventNumber - 1]; // 0-based indexing
+
       setFormData({
-        event_name: '',
-        category: '',
-        vendor_id: ''
+        event_name: existingEvent?.event_name || "",
+        category: existingEvent?.category || "",
+        vendor_id: existingEvent?.vendor_id || "",
       });
     }
-  }, [isOpen, vendors]); // Added vendors as dependency for live sync
+  }, [isOpen, vendors, existingEvents, eventNumber]);
 
-  // Get unique categories from all vendors - this will update when vendors change
   const getAvailableCategories = () => {
-    const allCategories = vendors.flatMap(vendor => 
+    const allCategories = vendors.flatMap((vendor) =>
       Object.keys(vendor.categoryPrices)
     );
-    return [...new Set(allCategories)].filter(cat => cat.length > 0);
+    return [...new Set(allCategories)].filter((cat) => cat.length > 0);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.event_name.trim() || !formData.category) return;
-    
+
     onSubmit({
       event_name: formData.event_name.trim(),
       category: formData.category,
-      vendor_id: formData.vendor_id || null
+      vendor_id: formData.vendor_id || null,
     });
 
-    // Reset form for next event
     setFormData({
-      event_name: '',
-      category: '',
-      vendor_id: ''
+      event_name: "",
+      category: "",
+      vendor_id: "",
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    
-    // If category changes, reset vendor selection to ensure consistency
-    if (name === 'category') {
-      setFormData(prev => ({
+
+    if (name === "category") {
+      setFormData((prev) => ({
         ...prev,
         [name]: value,
-        vendor_id: '' // Reset vendor when category changes
+        vendor_id: "", // reset vendor when category changes
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: value
+        [name]: value,
       }));
     }
   };
@@ -83,8 +85,8 @@ const EventModal: React.FC<EventModalProps> = ({
   if (!isOpen) return null;
 
   const availableCategories = getAvailableCategories();
-  const selectedVendor = vendors.find(v => v.id === formData.vendor_id);
-  const matchingVendors = vendors.filter(vendor => 
+  const selectedVendor = vendors.find((v) => v.id === formData.vendor_id);
+  const matchingVendors = vendors.filter((vendor) =>
     Object.keys(vendor.categoryPrices).includes(formData.category)
   );
 
@@ -97,7 +99,7 @@ const EventModal: React.FC<EventModalProps> = ({
               Event {eventNumber} of {totalEvents}
             </h2>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(eventNumber / totalEvents) * 100}%` }}
               ></div>
@@ -140,7 +142,9 @@ const EventModal: React.FC<EventModalProps> = ({
             >
               <option value="">Select a category</option>
               {availableCategories.map((category) => (
-                <option key={category} value={category}>{category}</option>
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
@@ -159,16 +163,21 @@ const EventModal: React.FC<EventModalProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select a vendor (optional)</option>
-              {matchingVendors.map(vendor => (
+              {matchingVendors.map((vendor) => (
                 <option key={vendor.id} value={vendor.id}>
-                  {vendor.name} - {formData.category && vendor.categoryPrices[formData.category] ? 
-                    `$${vendor.categoryPrices[formData.category].toLocaleString()}` : 'N/A'}
+                  {vendor.name} -{" "}
+                  {formData.category && vendor.categoryPrices[formData.category]
+                    ? `$${vendor.categoryPrices[
+                        formData.category
+                      ].toLocaleString()}`
+                    : "N/A"}
                 </option>
               ))}
             </select>
             {formData.category && matchingVendors.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">
-                Showing {matchingVendors.length} vendor(s) offering "{formData.category}" services
+                Showing {matchingVendors.length} vendor(s) offering "
+                {formData.category}" services
               </p>
             )}
             {formData.category && matchingVendors.length === 0 && (
@@ -178,23 +187,37 @@ const EventModal: React.FC<EventModalProps> = ({
             )}
           </div>
 
-          {selectedVendor && formData.category && selectedVendor.categoryPrices[formData.category] && (
-            <div className="bg-green-50 p-3 rounded-lg">
-              <h4 className="font-medium text-green-800 mb-2">Cost Breakdown:</h4>
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>{formData.category}</span>
-                  <span className="font-semibold">${selectedVendor.categoryPrices[formData.category].toLocaleString()}</span>
-                </div>
-                <div className="border-t pt-1 mt-2">
-                  <div className="flex justify-between font-bold text-green-800">
-                    <span>Total:</span>
-                    <span>${selectedVendor.categoryPrices[formData.category].toLocaleString()}</span>
+          {selectedVendor &&
+            formData.category &&
+            selectedVendor.categoryPrices[formData.category] && (
+              <div className="bg-green-50 p-3 rounded-lg">
+                <h4 className="font-medium text-green-800 mb-2">
+                  Cost Breakdown:
+                </h4>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>{formData.category}</span>
+                    <span className="font-semibold">
+                      $
+                      {selectedVendor.categoryPrices[
+                        formData.category
+                      ].toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="border-t pt-1 mt-2">
+                    <div className="flex justify-between font-bold text-green-800">
+                      <span>Total:</span>
+                      <span>
+                        $
+                        {selectedVendor.categoryPrices[
+                          formData.category
+                        ].toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           <div className="flex gap-3 pt-4">
             <button
@@ -208,7 +231,7 @@ const EventModal: React.FC<EventModalProps> = ({
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {eventNumber < totalEvents ? 'Next Event' : 'Complete'}
+              {eventNumber < totalEvents ? "Next Event" : "Complete"}
             </button>
           </div>
         </form>
