@@ -34,8 +34,7 @@ const VendorTable: React.FC<VendorTableProps> = ({
         <thead>
           <tr className="border-b border-gray-200">
             <th className="text-left py-3 px-2 font-semibold text-gray-700">Name</th>
-            <th className="text-left py-3 px-2 font-semibold text-gray-700">Categories</th>
-            <th className="text-left py-3 px-2 font-semibold text-gray-700">Price</th>
+            <th className="text-left py-3 px-2 font-semibold text-gray-700">Categories & Prices</th>
             <th className="text-center py-3 px-2 font-semibold text-gray-700">Actions</th>
           </tr>
         </thead>
@@ -46,21 +45,14 @@ const VendorTable: React.FC<VendorTableProps> = ({
                 <div className="font-medium text-gray-900">{vendor.name}</div>
               </td>
               <td className="py-3 px-2">
-                <div className="flex flex-wrap gap-1">
-                  {vendor.categories.split(',').map((category, index) => (
-                    <span
-                      key={index}
-                      className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-                    >
-                      {category.trim()}
-                    </span>
+                <div className="space-y-1">
+                  {Object.entries(vendor.categoryPrices).map(([category, price]) => (
+                    <div key={category} className="flex justify-between items-center bg-blue-50 px-2 py-1 rounded text-sm">
+                      <span className="text-blue-800 font-medium">{category}</span>
+                      <span className="text-green-600 font-semibold">${price.toLocaleString()}</span>
+                    </div>
                   ))}
                 </div>
-              </td>
-              <td className="py-3 px-2">
-                <span className="font-semibold text-green-600">
-                  ${vendor.price.toLocaleString()}
-                </span>
               </td>
               <td className="py-3 px-2">
                 <div className="flex justify-center gap-2">

@@ -17,50 +17,73 @@ const VendorModal: React.FC<VendorModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    categories: '',
-    price: 0
+    categoryPrices: {} as { [category: string]: number }
   });
+  const [newCategory, setNewCategory] = useState('');
+  const [newPrice, setNewPrice] = useState(0);
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         name: initialData.name,
-        categories: initialData.categories,
-        price: initialData.price
+        categoryPrices: { ...initialData.categoryPrices }
       });
     } else {
       setFormData({
         name: '',
-        categories: '',
-        price: 0
+        categoryPrices: {}
       });
     }
   }, [initialData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim() || Object.keys(formData.categoryPrices).length === 0) return;
     
     onSubmit({
       name: formData.name.trim(),
-      categories: formData.categories.trim(),
-      price: Number(formData.price)
+      categoryPrices: formData.categoryPrices
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' ? Number(value) : value
+      name: e.target.value
     }));
+  };
+
+  const addCategoryPrice = () => {
+    if (!newCategory.trim() || newPrice <= 0) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      categoryPrices: {
+        ...prev.categoryPrices,
+        [newCategory.trim()]: newPrice
+      }
+    }));
+    
+    setNewCategory('');
+    setNewPrice(0);
+  };
+
+  const removeCategoryPrice = (category: string) => {
+    setFormData(prev => {
+      const newCategoryPrices = { ...prev.categoryPrices };
+      delete newCategoryPrices[category];
+      return {
+        ...prev,
+        categoryPrices: newCategoryPrices
+      };
+    });
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
             {initialData ? 'Edit Vendor' : 'Add Vendor'}
@@ -82,7 +105,7 @@ const VendorModal: React.FC<VendorModalProps> = ({
               type="text"
               name="name"
               value={formData.name}
-              onChange={handleInputChange}
+              onChange={handleNameChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter vendor name"
               required
@@ -91,36 +114,57 @@ const VendorModal: React.FC<VendorModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Categories
+              Category-Price Pairs
             </label>
-            <input
-              type="text"
-              name="categories"
-              value={formData.categories}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., catering, photography, audio"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Separate multiple categories with commas
-            </p>
-          </div>
+            
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Category name"
+              />
+              <input
+                type="number"
+                value={newPrice}
+                onChange={(e) => setNewPrice(Number(e.target.value))}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Price"
+                min="0"
+                step="0.01"
+              />
+              <button
+                type="button"
+                onClick={addCategoryPrice}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Price
-            </label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter price"
-              min="0"
-              step="0.01"
-              required
-            />
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {Object.entries(formData.categoryPrices).map(([category, price]) => (
+                <div key={category} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                  <span className="text-sm">
+                    <strong>{category}</strong>: ${price.toLocaleString()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeCategoryPrice(category)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {Object.keys(formData.categoryPrices).length === 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Add at least one category-price pair
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

@@ -10,10 +10,11 @@ interface DashboardStatsProps {
 const DashboardStats: React.FC<DashboardStatsProps> = ({ vendors, clients }) => {
   const totalVendors = vendors.length;
   const totalClients = clients.length;
+  const totalEvents = clients.reduce((sum, client) => sum + client.events.length, 0);
   const totalEarnings = clients.reduce((sum, client) => sum + client.totalCost, 0);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div className="bg-white rounded-xl shadow-lg p-6 text-center">
         <div className="text-3xl font-bold text-blue-600 mb-2">{totalVendors}</div>
         <div className="text-gray-600 font-medium">Total Vendors</div>
@@ -22,6 +23,11 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ vendors, clients }) => 
       <div className="bg-white rounded-xl shadow-lg p-6 text-center">
         <div className="text-3xl font-bold text-green-600 mb-2">{totalClients}</div>
         <div className="text-gray-600 font-medium">Total Clients</div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+        <div className="text-3xl font-bold text-orange-600 mb-2">{totalEvents}</div>
+        <div className="text-gray-600 font-medium">Total Events</div>
       </div>
       
       <div className="bg-white rounded-xl shadow-lg p-6 text-center">

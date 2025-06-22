@@ -21,8 +21,7 @@ const ClientTable: React.FC<ClientTableProps> = ({
 
   const getUniqueCategories = (client: Client): string[] => {
     const allCategories = client.events
-      .flatMap(event => event.category.split(','))
-      .map(cat => cat.trim())
+      .flatMap(event => event.categories)
       .filter(cat => cat.length > 0);
     return [...new Set(allCategories)];
   };

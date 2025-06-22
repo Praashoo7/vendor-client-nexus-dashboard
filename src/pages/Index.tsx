@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import VendorModal from '@/components/VendorModal';
 import ClientModal from '@/components/ClientModal';
@@ -8,6 +7,7 @@ import ClientTable from '@/components/ClientTable';
 import DashboardStats from '@/components/DashboardStats';
 import { Vendor, Client, Event } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -29,11 +29,31 @@ const Index = () => {
 
   const loadVendors = async () => {
     try {
-      // Mock data for demonstration
+      // Mock data for demonstration with category-specific pricing
       const mockVendors: Vendor[] = [
-        { id: 1, name: 'Elite Catering', categories: 'catering,food', price: 5000 },
-        { id: 2, name: 'Perfect Photos', categories: 'photography', price: 3000 },
-        { id: 3, name: 'Sound Masters', categories: 'audio,equipment', price: 2500 },
+        { 
+          id: 1, 
+          name: 'Elite Catering', 
+          categoryPrices: { 
+            'catering': 5000, 
+            'food': 3000 
+          } 
+        },
+        { 
+          id: 2, 
+          name: 'Perfect Photos', 
+          categoryPrices: { 
+            'photography': 3000 
+          } 
+        },
+        { 
+          id: 3, 
+          name: 'Sound Masters', 
+          categoryPrices: {
+            'audio': 2500,
+            'equipment': 1500
+          } 
+        },
       ];
       setVendors(mockVendors);
     } catch (error) {
@@ -43,16 +63,22 @@ const Index = () => {
 
   const loadClients = async () => {
     try {
-      // Mock data with calculated costs
+      // Mock data with updated structure
       const mockClients: Client[] = [
         {
           id: 1,
           name: 'John Smith',
           contactNo: '123-456-7890',
           events: [
-            { id: 1, clientId: 1, eventName: 'Wedding', category: 'catering', vendorId: 1 }
+            { 
+              id: 1, 
+              clientId: 1, 
+              eventName: 'Wedding', 
+              categories: ['catering', 'photography'], 
+              vendorId: 1 
+            }
           ],
-          totalCost: 5000
+          totalCost: 8000
         },
       ];
       setClients(mockClients);
@@ -115,7 +141,7 @@ const Index = () => {
             id: Date.now() + index,
             clientId: Date.now(),
             eventName: event.eventName || '',
-            category: event.category || '',
+            categories: event.categories || [],
             vendorId: event.vendorId || 0
           })),
           totalCost: calculateClientCost(updatedEvents)
@@ -133,17 +159,14 @@ const Index = () => {
   const calculateClientCost = (events: Partial<Event>[]): number => {
     let totalCost = 0;
     events.forEach(event => {
-      if (event.vendorId) {
+      if (event.vendorId && event.categories) {
         const vendor = vendors.find(v => v.id === event.vendorId);
-        if (vendor && event.category) {
-          const eventCategories = event.category.split(',').map(c => c.trim());
-          const vendorCategories = vendor.categories.split(',').map(c => c.trim());
-          const hasMatchingCategory = eventCategories.some(cat => 
-            vendorCategories.includes(cat)
-          );
-          if (hasMatchingCategory) {
-            totalCost += vendor.price;
-          }
+        if (vendor) {
+          event.categories.forEach(category => {
+            if (vendor.categoryPrices[category]) {
+              totalCost += vendor.categoryPrices[category];
+            }
+          });
         }
       }
     });
@@ -213,6 +236,12 @@ const Index = () => {
           >
             Add Client
           </button>
+          <Link
+            to="/graph"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl"
+          >
+            View Graph
+          </Link>
         </div>
 
         {/* Tables */}
