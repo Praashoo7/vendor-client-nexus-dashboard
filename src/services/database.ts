@@ -248,7 +248,7 @@ export const fetchDashboardStats = async (): Promise<DatabaseStats> => {
   ]);
 
   // Calculate total earnings
-  const { data: clients } = await fetchClients();
+  const clients = await fetchClients(); // Fixed: removed .data property access
   const totalEarnings = clients.reduce((sum, client) => sum + client.totalCost, 0);
 
   return {

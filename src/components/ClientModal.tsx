@@ -25,7 +25,7 @@ const ClientModal: React.FC<ClientModalProps> = ({
     if (initialData) {
       setFormData({
         name: initialData.name,
-        contactNo: initialData.contactNo,
+        contactNo: initialData.contact_no, // Fixed: use contact_no from the Client type
         numberOfEvents: initialData.events.length
       });
     } else {
