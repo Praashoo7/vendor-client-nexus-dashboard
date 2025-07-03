@@ -39,7 +39,16 @@ const ClientModal: React.FC<ClientModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.contactNo.trim()) return;
+    const trimmedName = formData.name.trim();
+    const trimmedContact = formData.contactNo.trim();
+
+    if (!trimmedName || !trimmedContact) return;
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(trimmedContact)) {
+      alert("Please enter a valid 10-digit phone number.");
+      return;
+    }
     
     onSubmit({
       name: formData.name.trim(),
